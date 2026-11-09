@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pratik ke kaam</title>
+<style>
+:root{
+  --bg:#ffffff; --text:#2a1850; --muted:#6b5b8f; --accent:#7c3aed; --card:#f8f4ff; --line:#e4d7fb; --onaccent:#ffffff;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#1a1033; --text:#f5f0ff; --muted:#b9a9e0; --accent:#a78bfa; --card:#251847; --line:#3a2a66; --onaccent:#1a1033;}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Trebuchet MS",Verdana,sans-serif;line-height:1.5}
+main{max-width:520px;margin:0 auto;padding:28px 18px 48px}
+h1{font-size:1.9rem;margin:0 0 4px;background:linear-gradient(90deg,#7c3aed,#db2777,#f97316);-webkit-background-clip:text;background-clip:text;color:transparent;display:inline-block}
+.sub{color:var(--muted);margin:0 0 20px}
+.add{display:flex;gap:8px;margin-bottom:16px}
+input[type=text]{flex:1;min-width:0;padding:14px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);font-size:1rem}
+input[type=text]:focus{outline:none;border-color:var(--accent)}
+button{font:inherit;cursor:pointer}
+.addbtn{background:linear-gradient(90deg,#7c3aed,#db2777);color:#fff;border:0;border-radius:12px;padding:0 18px;font-weight:700}
+.filters{display:flex;gap:8px;margin-bottom:14px}
+.filters button{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:999px;padding:6px 14px}
+.filters button.on{background:var(--accent);color:var(--onaccent);border-color:var(--accent)}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+li{border-left-width:6px}
+li input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+li span{flex:1;word-break:break-word}
+li.done span{text-decoration:line-through;color:var(--muted)}
+.del{background:none;border:0;color:var(--muted);font-size:1.2rem;padding:4px 8px}
+.empty{text-align:center;color:var(--muted);padding:24px 0}
+.foot{display:flex;justify-content:space-between;align-items:center;color:var(--muted);margin-top:14px;font-size:.95rem}
+.clear{background:none;border:0;color:var(--accent);font-weight:700}
+</style>
+</head>
+<body>
+<main>
+  <h1>Pratik ke kaam</h1>
+  <p class="sub" id="sub"></p>
+  <div class="add">
+    <input type="text" id="inp" placeholder="Naya kaam likho" maxlength="120" autocomplete="off">
+    <button class="addbtn" id="addBtn">Kaam jodo</button>
+  </div>
+  <div class="filters" id="filters">
+    <button data-f="all" class="on">Sab</button>
+    <button data-f="open">Baaki</button>
+    <button data-f="done">Ho gaye</button>
+  </div>
+  <ul id="list"></ul>
+  <div class="empty" id="empty" hidden>Abhi koi kaam nahi. Upar ek likho.</div>
+  <div class="foot"><span id="count"></span><button class="clear" id="clearBtn">Ho gaye hataao</button></div>
+</main>
+<script>
+var tasks = [];
+var filter = "all";
+try {
+  var saved = localStorage.getItem("pratik-todo");
+  if (saved) tasks = JSON.parse(saved);
+} catch (e) { tasks = []; }
+
+function save() {
+  try { localStorage.setItem("pratik-todo", JSON.stringify(tasks)); } catch (e) {}
+}
+
+function render() {
+  var list = document.getElementById("list");
+  list.innerHTML = "";
+  var shown = tasks.filter(function (t) {
+    if (filter === "open") return !t.done;
+    if (filter === "done") return t.done;
+    return true;
+  });
+  shown.forEach(function (t) {
+    var li = document.createElement("li");
+    if (t.done) li.className = "done";
+    li.style.borderLeftColor = t.color || "#7c3aed";
+    var cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = t.done;
+    cb.onchange = function () { t.done = cb.checked; save(); render(); };
+    var sp = document.createElement("span");
+    sp.textContent = t.text;
+    var del = document.createElement("button");
+    del.className = "del";
+    del.textContent = "✕";
+    del.setAttribute("aria-label", "Kaam hataao");
+    del.onclick = function () {
+      tasks = tasks.filter(function (x) { return x.id !== t.id; });
+      save(); render();
+    };
+    li.appendChild(cb); li.appendChild(sp); li.appendChild(del);
+    list.appendChild(li);
+  });
+  var left = tasks.filter(function (t) { return !t.done; }).length;
+  document.getElementById("count").textContent = left + " kaam baaki";
+  document.getElementById("sub").textContent = tasks.length ? tasks.length + " mein se " + (tasks.length - left) + " ho gaye" : "Roz ke kaam yahan likho";
+  document.getElementById("empty").hidden = shown.length > 0;
+}
+
+function addTask() {
+  var inp = document.getElementById("inp");
+  var text = inp.value.trim();
+  if (!text) return;
+  var palette = ["#7c3aed", "#db2777", "#f97316", "#16a34a", "#0ea5e9"];
+  tasks.unshift({ id: Date.now(), text: text, done: false, color: palette[tasks.length % palette.length] });
+  inp.value = "";
+  save(); render();
+}
+
+document.getElementById("addBtn").onclick = addTask;
+document.getElementById("inp").addEventListener("keydown", function (e) { if (e.key === "Enter") addTask(); });
+document.getElementById("clearBtn").onclick = function () {
+  tasks = tasks.filter(function (t) { return !t.done; });
+  save(); render();
+};
+document.querySelectorAll("#filters button").forEach(function (b) {
+  b.onclick = function () {
+    filter = b.getAttribute("data-f");
+    document.querySelectorAll("#filters button").forEach(function (x) { x.classList.toggle("on", x === b); });
+    render();
+  };
+});
+render();
+</script>
+</body>
+</html>
